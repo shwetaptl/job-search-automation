@@ -1,0 +1,5 @@
+google-genai
+python-docx
+requests
+beautifulsoup4
+playwright  # after install, also run: playwright install chromium

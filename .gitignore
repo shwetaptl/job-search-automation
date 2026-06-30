@@ -1,0 +1,23 @@
+# Personal profile data — contains private info, never commit
+profile_data.md
+
+# Job search output files
+jobs_*.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment / secrets
+.env
+*.env
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
