@@ -1,4 +1,5 @@
 google-genai
+groq
 python-docx
 requests
 beautifulsoup4

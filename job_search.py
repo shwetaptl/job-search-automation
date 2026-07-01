@@ -21,9 +21,6 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from docx import Document
-from google import genai
-from google.genai import types
-
 try:
     from playwright.sync_api import sync_playwright
     PLAYWRIGHT_AVAILABLE = True
@@ -73,7 +70,8 @@ SENIOR_TITLE_KEYWORDS = [
     "architect", "cto", "ceo", "ciso",
 ]
 
-MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash"
+GROQ_MODEL   = "llama-3.3-70b-versatile"
 MIN_SCORE = 60          # jobs below this score are skipped in output
 MAX_JOBS = 200          # safety cap — process at most this many jobs
 REQUEST_DELAY = 0.5     # seconds between HTTP requests (be polite)
@@ -104,7 +102,7 @@ def read_docx(path: str) -> str:
     return "\n".join(paragraphs)
 
 
-def summarize_profile(client: genai.Client, raw_text: str) -> str:
+def summarize_profile(provider: str, client, raw_text: str) -> str:
     """
     One-time call: ask Gemini to distill the raw .docx text into a clean,
     scoring-optimized summary. Strips meta-instructions, interview coaching
@@ -136,8 +134,7 @@ PROFILE DOCUMENT:
 {raw_text}"""
 
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
-        return response.text.strip()
+        return call_llm(provider, client, prompt, max_tokens=2048)
     except Exception as e:
         print(f"  [warn] Profile summarization failed: {e}. Using raw text.")
         return raw_text
@@ -159,7 +156,7 @@ def save_profile_doc(text: str) -> None:
         f.write(text)
 
 
-def update_profile_doc(client: genai.Client, current_doc: str, new_fact: str) -> str:
+def update_profile_doc(provider: str, client, current_doc: str, new_fact: str) -> str:
     """
     Merge a new fact (e.g. "I learned Kubernetes", "I completed an AWS cert")
     into the existing structured profile doc. Keeps everything else unchanged
@@ -184,8 +181,7 @@ NEW FACT TO ADD:
 
 Output the complete updated profile document:"""
 
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text.strip()
+    return call_llm(provider, client, prompt, max_tokens=2048)
 
 
 def fetch_text(url: str) -> str:
@@ -490,7 +486,7 @@ def fetch_greenhouse_jobs(companies: list[str]) -> list[dict]:
     return jobs
 
 
-def score_job(client: genai.Client, profile: str, job: dict, description: str) -> dict:
+def score_job(provider: str, client, profile: str, job: dict, description: str) -> dict:
     """
     Ask Gemini to score the job match 0-100 and give a short reason.
     Returns dict with 'score' (int) and 'reason' (str).
@@ -526,8 +522,7 @@ Respond with ONLY a JSON object — no markdown, no text outside the JSON:
 {{"score": <integer 0-100>, "reason": "<one concise sentence: the strongest match signal or the key mismatch>"}}"""
 
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
-        text = response.text.strip()
+        text = call_llm(provider, client, prompt, max_tokens=256)
 
         # strip markdown code fences if present
         text = re.sub(r"^```(?:json)?\s*", "", text)
@@ -547,16 +542,48 @@ Respond with ONLY a JSON object — no markdown, no text outside the JSON:
     return {"score": 0, "reason": "scoring error"}
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── LLM provider ──────────────────────────────────────────────────────────────
 
-def get_gemini_client() -> genai.Client:
-    api_key = os.environ.get("GEMINI_API_KEY", "")
-    if not api_key:
-        print("Error: GEMINI_API_KEY environment variable is not set.")
-        print("Get a free key at https://aistudio.google.com/app/apikey")
-        print("Then run: export GEMINI_API_KEY='your-key-here'")
-        sys.exit(1)
-    return genai.Client(api_key=api_key)
+def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024) -> str:
+    """Unified LLM call — works with either Gemini or Groq client."""
+    if provider == "gemini":
+        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+        return response.text.strip()
+    else:
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content.strip()
+
+
+def get_llm_client() -> tuple:
+    """
+    Auto-detect which LLM provider to use.
+    Checks GEMINI_API_KEY first (primary), falls back to GROQ_API_KEY.
+    Returns (provider_name, client_object).
+    """
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+
+    if gemini_key:
+        from google import genai
+        print("Using Google Gemini API")
+        return ("gemini", genai.Client(api_key=gemini_key))
+
+    if groq_key:
+        from groq import Groq
+        print("Using Groq API (local fallback)")
+        return ("groq", Groq(api_key=groq_key))
+
+    print("Error: No API key found. Set one of:")
+    print("  Primary:  export GEMINI_API_KEY='your-key'  # https://aistudio.google.com/app/apikey")
+    print("  Fallback: export GROQ_API_KEY='your-key'    # https://console.groq.com/keys")
+    sys.exit(1)
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 
 def main():
@@ -582,9 +609,9 @@ def main():
             sys.exit(1)
         print(f"  Profile loaded ({len(raw_profile)} chars)")
 
-        client = get_gemini_client()
-        print("\nSummarizing profile with Gemini...")
-        profile_text = summarize_profile(client, raw_profile)
+        provider, client = get_llm_client()
+        print("\nSummarizing profile...")
+        profile_text = summarize_profile(provider, client, raw_profile)
         save_profile_doc(profile_text)
 
         print("\n" + "─" * 60)
@@ -595,10 +622,10 @@ def main():
         return
 
     if args.update:
-        client = get_gemini_client()
+        provider, client = get_llm_client()
         current_doc = load_profile_doc()
         print("Updating profile doc with new fact...")
-        updated_doc = update_profile_doc(client, current_doc, args.update)
+        updated_doc = update_profile_doc(provider, client, current_doc, args.update)
         save_profile_doc(updated_doc)
 
         print("\n" + "─" * 60)
@@ -611,10 +638,11 @@ def main():
     # ── Normal run: use the existing profile doc directly ──
     if not PLAYWRIGHT_AVAILABLE:
         print("Tip: install Playwright to scrape JS-rendered job pages:")
-        print("     pip install playwright && playwright install chromium\n")
+        print("     pip install playwright && playwright install chromium")
+        print()
 
     profile_text = load_profile_doc()
-    gemini_client = get_gemini_client()
+    provider, client = get_llm_client()
 
     # ── Fetch jobs from all sources ──
     all_jobs = []
@@ -657,7 +685,6 @@ def main():
         unique_jobs = unique_jobs[:MAX_JOBS]
 
     # ── Score each job ──
-    client = gemini_client
     results = []
 
     for i, job in enumerate(unique_jobs, 1):
@@ -671,8 +698,8 @@ def main():
             description = extract_job_description(job["url"])
             time.sleep(REQUEST_DELAY)
 
-        print(f"  Scoring with Gemini...")
-        scored = score_job(client, profile_text, job, description)
+        print(f"  Scoring...")
+        scored = score_job(provider, client, profile_text, job, description)
         job["score"] = scored["score"]
         job["reason"] = scored["reason"]
         print(f"  Score: {job['score']}/100 — {job['reason']}")

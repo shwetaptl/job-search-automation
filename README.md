@@ -91,7 +91,7 @@ This pipeline automates the entire process:
 
 ### Prerequisites
 - Python 3.11+
-- A free Google Gemini API key — get one at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+- An LLM API key — Gemini (recommended) or Groq (free alternative)
 
 ### Install
 
@@ -105,10 +105,25 @@ playwright install chromium
 
 ### Configure API key
 
+The script auto-detects which provider to use based on the environment variable you set.
+
+**Option A — Google Gemini (recommended):**
 ```bash
 export GEMINI_API_KEY="your-key-here"
+# Get a free key at: https://aistudio.google.com/app/apikey
+```
 
-# To make it permanent:
+**Option B — Groq (free, no credit card required):**
+```bash
+export GROQ_API_KEY="your-key-here"
+# Get a free key at: https://console.groq.com/keys
+```
+
+If `GEMINI_API_KEY` is set, Gemini is used. If only `GROQ_API_KEY` is set, Groq is used as a fallback. Both produce high-quality scoring results.
+
+To make your key permanent:
+```bash
+# Example for Gemini:
 echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.zshrc
 source ~/.zshrc
 ```
