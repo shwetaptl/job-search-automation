@@ -101,6 +101,20 @@ GREENHOUSE_COMPANIES = [
     "dropbox",  # Dropbox (55 jobs)
     "gusto",  # Gusto (78 jobs)
     "anthropic",  # Anthropic (389 jobs)
+    "harness",             # Harness — CI/CD platform
+    "sentinelone",         # SentinelOne — cybersecurity
+    "plaid",               # Plaid — fintech
+    "fractal",             # Fractal Analytics — AI/data
+    "quantiphi",           # Quantiphi — AI/data
+    "zs",                  # ZS Associates — consulting
+    "nagarro",             # Nagarro — engineering services
+    "slalom",              # Slalom — direct-hire consulting
+    "westmonroe",          # West Monroe — direct-hire consulting
+    "veeva",               # Veeva Systems — life sciences SaaS
+    "waystar",             # Waystar — healthcare payments
+    "modernizingmedicine", # Modernizing Medicine — EHR
+    "pointclickcare",      # PointClickCare — senior care SaaS
+    "availity",            # Availity — healthcare interoperability
 ]
 
 # Companies using Lever ATS — verified via API, free public JSON, full descriptions in response.
@@ -121,7 +135,15 @@ LEVER_COMPANIES = [
     "arcadia",        # healthcare data platform
     "sonatype",       # dev tools / supply chain security
     "logrocket",      # frontend observability
-    "neon",           # Postgres cloud database
+    "neon",               # Postgres cloud database
+    "guidewiresoftware",  # Guidewire — insurance platform, C#/.NET heavy
+    "vertafore",          # Vertafore — insurance software, C#/.NET heavy
+    "majesco",            # Majesco — insurance software
+    "duckcreektechnologies", # Duck Creek — insurance SaaS, C#/.NET
+    "appliedsystems",     # Applied Systems (EZLynx) — insurance tech
+    "netsmart",           # Netsmart — behavioral health, C#/.NET
+    "publicissapient",    # Publicis Sapient — direct-hire consulting
+    "epam",               # EPAM Systems — direct-hire engineering
 ]
 
 # Companies using Workday ATS — search API returns titles/URLs; descriptions fetched via Playwright.
@@ -153,6 +175,24 @@ WORKDAY_COMPANIES = [
     ("opentext", "opentext"),
     ("pegasystems", "pega"),
     ("informatica", "informatica"),
+    ("epic", "epic"),
+    ("ssc", "ssc"),
+    ("bentleysystems", "bentley"),
+    ("ptc", "ptc"),
+    ("verint", "verint"),
+    ("infor", "infor"),
+    ("epicor", "epicor"),
+    ("realpage", "realpage"),
+    ("yardi", "yardi"),
+    ("mrisoftware", "mrisoftware"),
+    ("tradeweb", "tradeweb"),
+    ("envestnet", "envestnet"),
+    ("wipro", "wipro"),
+    ("infosys", "infosys"),
+    ("hcltech", "hcltech"),
+    ("capgemini", "capgemini"),
+    ("ltimindtree", "ltimindtree"),
+    ("cognizant", "cognizant"),
 ]
 
 # Titles containing these words are skipped — they signal senior/management roles
