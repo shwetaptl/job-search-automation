@@ -101,20 +101,9 @@ GREENHOUSE_COMPANIES = [
     "dropbox",  # Dropbox (55 jobs)
     "gusto",  # Gusto (78 jobs)
     "anthropic",  # Anthropic (389 jobs)
-    "harness",             # Harness — CI/CD platform
-    "sentinelone",         # SentinelOne — cybersecurity
-    "plaid",               # Plaid — fintech
-    "fractal",             # Fractal Analytics — AI/data
-    "quantiphi",           # Quantiphi — AI/data
-    "zs",                  # ZS Associates — consulting
-    "nagarro",             # Nagarro — engineering services
-    "slalom",              # Slalom — direct-hire consulting
-    "westmonroe",          # West Monroe — direct-hire consulting
-    "veeva",               # Veeva Systems — life sciences SaaS
-    "waystar",             # Waystar — healthcare payments
-    "modernizingmedicine", # Modernizing Medicine — EHR
-    "pointclickcare",      # PointClickCare — senior care SaaS
-    "availity",            # Availity — healthcare interoperability
+    "harnessinc",  # was: harness             # Harness — CI/CD platform
+    "sentinellabs",        # SentinelOne — cybersecurity
+    "fractalsoftware",  # was: fractal             # Fractal Analytics — AI/data
 ]
 
 # Companies using Lever ATS — verified via API, free public JSON, full descriptions in response.
@@ -136,14 +125,8 @@ LEVER_COMPANIES = [
     "sonatype",       # dev tools / supply chain security
     "logrocket",      # frontend observability
     "neon",               # Postgres cloud database
-    "guidewiresoftware",  # Guidewire — insurance platform, C#/.NET heavy
-    "vertafore",          # Vertafore — insurance software, C#/.NET heavy
-    "majesco",            # Majesco — insurance software
-    "duckcreektechnologies", # Duck Creek — insurance SaaS, C#/.NET
-    "appliedsystems",     # Applied Systems (EZLynx) — insurance tech
-    "netsmart",           # Netsmart — behavioral health, C#/.NET
-    "publicissapient",    # Publicis Sapient — direct-hire consulting
-    "epam",               # EPAM Systems — direct-hire engineering
+    "plaid",              # fintech payments — moved from Greenhouse
+    "pointclickcare",     # senior care SaaS — H1B sponsor
 ]
 
 # Companies using Workday ATS — search API returns titles/URLs; descriptions fetched via Playwright.
@@ -193,6 +176,8 @@ WORKDAY_COMPANIES = [
     ("capgemini", "capgemini"),
     ("ltimindtree", "ltimindtree"),
     ("cognizant", "cognizant"),
+    ("quantiphi", "Careers_at_Quantiphi"),  # AI/data — moved from Greenhouse
+    ("guidewire", "external"),              # insurance platform — wd5
 ]
 
 # Companies where the ATS slug could not be auto-confirmed.
