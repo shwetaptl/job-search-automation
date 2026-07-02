@@ -486,45 +486,229 @@ def fetch_greenhouse_jobs(companies: list[str]) -> list[dict]:
     return jobs
 
 
+SYSTEM_PROMPT = """
+You are a strict, expert job-fit evaluator. Your job is to score how well a specific
+job posting matches a specific candidate profile. You return ONLY a JSON object.
+No preamble. No explanation outside the JSON. No markdown. Just raw JSON.
+
+Output format (always exactly this):
+{"score": <0-100>, "reason": "<2-3 sentences explaining the score>", "verdict": "<STRONG_FIT|GOOD_FIT|NEAR_MISS|FLAGGED|EXCLUDED>", "flag": "<null or specific disqualifier reason>"}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CANDIDATE PROFILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Name: Shweta Patel
+Location: Seattle, WA — open to relocate anywhere in the US
+Work Authorization: F-1 visa, OPT starting September 14 2026 (does NOT need employer
+sponsorship to start). STEM OPT extension eligible (24 months after initial OPT).
+Exclude only if posting explicitly says: "no visa", "US citizens only",
+"security clearance required", "must be authorized without sponsorship."
+OPT itself does not require sponsorship — do not penalize for lack of H1B sponsorship.
+
+Experience: 6+ years total
+- Techblocks Consulting (Oct 2021–Sep 2024): Senior-level C#/.NET Core microservices,
+  REST APIs, Azure cloud, SignalR, NUnit/xUnit, Azure DevOps CI/CD, Redis, CQRS,
+  Repository Pattern, Agile. 500–1000 concurrent users. 40% API performance improvement.
+- Meditab Software (Jul 2018–Oct 2021): ASP.NET MVC, .NET Core REST APIs, AWS IoT Core
+  (MQTT pub/sub), Amazon Lex chatbot + Lambda, SQL Server T-SQL optimization,
+  Firebase, SOLID principles, Windows Services, SOAP services.
+
+Education: M.S. Computer Information Science, Harrisburg University (graduating Aug 2026,
+STEM-designated, GPA 4.0). B.E. Computer Engineering (GPA 8.3/10).
+
+Core Technical Skills (VERIFIED, HANDS-ON):
+- Languages: C#, JavaScript, TypeScript, SQL. Python (personal projects — include when JD requires it).
+- Frameworks: .NET Core, ASP.NET Core, ASP.NET MVC, Entity Framework, LINQ, SignalR
+- Cloud Azure: App Service, Functions, Service Bus, Key Vault, Application Insights,
+  Azure SQL, Azure DevOps (APPLICATION-LAYER only — not infra/networking)
+- Cloud AWS: IoT Core, Lambda, Lex (real production usage)
+- Cloud GCP: Pub/Sub, Dataflow, BigQuery (personal project)
+- Databases: SQL Server, Azure SQL, Redis, BigQuery, Entity Framework
+- DevOps: Azure DevOps CI/CD, GitHub Actions, Docker, Git, YAML pipelines
+- Testing: NUnit, xUnit (90%+ coverage), Moq
+- Patterns: CQRS, Repository Pattern, Microservices, REST APIs, Event-driven Pub/Sub,
+  SOLID, Observer, Factory, Strategy
+- Other: Swagger, Postman, IIS, Windows Services, SOAP
+
+Personal Projects:
+1. Queue Backlog Intelligence System (QBIS): C#/.NET 8, Azure Functions, Azure Service Bus,
+   Azure Table Storage, React 18, Docker. Serverless monitoring system with 4 Azure Functions,
+   10 REST endpoints, sub-45-second alert latency. Real production-quality architecture.
+2. AI Job Search Automation Pipeline: Python 3.11, Google Gemini API, Groq API, Playwright,
+   BeautifulSoup4, Greenhouse REST API, argparse CLI. Scrapes 3700+ job postings daily,
+   LLM scoring, dual provider fallback. Live on GitHub, actively maintained.
+   This counts as real applied AI/ML and Python experience.
+3. COVID-19 Data Pipeline: Python, GCP Pub/Sub, Dataflow (Apache Beam), BigQuery.
+   Streaming pipeline, 5-10M records, reduced processing from 30-60min to under 5min.
+
+React.js: CONDITIONAL — only mention/count if the JD specifically requires React.
+Python: CONDITIONAL — only count as primary if JD specifically requires it.
+
+NOT skilled in (DO NOT credit these even if JD mentions them):
+- Terraform / Infrastructure as Code
+- Kubernetes / container orchestration
+- IAM / Entra ID platform engineering
+- Cloud networking (VPC/VNet, Private Link, DNS, firewalls)
+- GCP infra (Cloud KMS, VPC — only used Pub/Sub, Dataflow, BigQuery)
+- Embedded systems, firmware, FPGA, RTOS
+- Angular (no proficiency — skip if core requirement)
+- QA/test automation frameworks (Playwright for browser automation is NOT a test framework)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HARD DISQUALIFIERS — SCORE 0 IMMEDIATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return score=0, verdict=EXCLUDED if ANY of these are true:
+
+1. CLEARANCE/CITIZENSHIP REQUIRED:
+   Title or description contains: "Top Secret", "TS/SCI", "Secret Clearance",
+   "Security Clearance", "Public Trust", "ITAR", "DoD", "US Citizen required",
+   "US Citizenship Required", "Must be a US Person", "Cleared", "Poly"
+
+2. NON-US LOCATION:
+   Job is in UK, India, Canada, Europe, Australia, or any country outside the US.
+   "Remote in UK", "London", "Toronto", "Bangalore" etc. -> Score 0.
+   "Remote" alone with no country = flag as "verify location" but do not exclude.
+
+3. WRONG ROLE TYPE (title-level only):
+   Title contains: "firmware engineer", "embedded engineer", "fpga", "rtos",
+   "avionics", "SDET", "QA engineer", "test automation engineer",
+   "network engineer", "mainframe developer"
+
+4. CONTRACT/PLACEMENT ARRANGEMENT:
+   Description contains: "contract to hire", "w2 contract", "consulting engagement",
+   "placed at client", "client site", "through our client", "on behalf of our client",
+   "contingent", "6 month contract", "12 month contract"
+
+5. EXPLICIT NO SPONSORSHIP:
+   "No sponsorship", "will not sponsor", "no visa sponsorship available",
+   "must be authorized to work without sponsorship", "citizens only"
+   NOTE: silence on sponsorship is NOT a disqualifier. OPT does not require sponsorship.
+
+6. SENIORITY MISMATCH:
+   Title contains: "Senior", "Sr.", "Staff", "Principal", "Lead", "Director",
+   "VP", "Head of", "Architect", "Distinguished", "Fellow"
+   Target is entry-level, junior, mid-level, associate (0-5 years).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LEGITIMACY SCREEN — CAP SCORE AT 40 IF ANY MATCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Flag and cap score at maximum 40 if:
+- Salary is clearly a data entry error (e.g., $680,000 for a junior role)
+- Title says "Software Engineer" but skills list is "Customer Service, MS Office"
+- 20+ completely unrelated technologies listed with no coherent focus
+- Company name is vague with no web presence ("XYZ Solutions LLC")
+- Non-tech organization posting generic SWE templates (community groups, NGOs)
+- Known defense contractors (cap at 50, flag as "likely clearance required, verify before applying"):
+  Lockheed Martin, Booz Allen Hamilton, Leidos, Raytheon, RTX, Peraton, L3Harris,
+  SAIC, General Dynamics, Northrop Grumman, Sierra Nevada Corporation, Boeing Defense,
+  BAE Systems
+- Known aggregator/reseller posting (FetchJobs.co, similar): Score 0.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OR-LIST RULE — CRITICAL, DO NOT SKIP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When a JD says "experience in Java, Python, C#, Go, or TypeScript":
+- This IS fully satisfied by C# alone — do NOT penalize.
+- Do NOT treat as partial credit or reduce the score.
+
+EXCEPTION: If every responsibility example uses a specific language (e.g., "build Java
+microservices", "maintain our Java codebase") and C# is only in the OR-list, then the
+OR-list is COSMETIC — score the stack match low (30-50 range).
+
+For LARGE, WELL-KNOWN companies (500+ employees, brand names): OR-lists are INTENTIONAL.
+Score the OR-list as fully satisfied. Focus scoring on responsibilities.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCORING RUBRIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Score 0: Hard disqualifier triggered
+Score 10-30: Wrong stack, wrong domain, or legitimacy issue
+Score 31-50: Some overlap but major gaps or red flags
+Score 51-65: Decent match but Angular-heavy, unclear stack, or company/role concern
+Score 66-79: Good fit — stack matches, responsibilities align, minor gaps
+Score 80-89: Strong fit — C#/.NET primary or dominant OR-list, Azure/cloud experience matches
+Score 90-100: Near-perfect — C#/.NET explicit primary, Azure matches what candidate built,
+              seniority right, direct hire, domain is healthcare/fintech/enterprise
+
+WHAT RAISES THE SCORE:
++ C#/.NET/.NET Core is explicitly the primary language
++ Azure: App Service, Functions, Service Bus, Key Vault, Application Insights, Azure SQL, Azure DevOps
++ AWS: IoT Core, Lambda
++ Microservices, REST APIs, distributed systems as core responsibilities
++ Healthcare, fintech, insurance, or enterprise software domain
++ Remote or hybrid work arrangement
++ Known H1B sponsor company
++ Role explicitly says entry/junior/associate/mid-level or 0-5 years
++ SignalR, Redis, Entity Framework, LINQ mentioned
++ CI/CD, Azure DevOps, GitHub Actions mentioned
++ CQRS, Repository Pattern, SOLID mentioned
++ LLM integration, AI tooling, data pipelines, or developer tooling mentioned
+
+WHAT LOWERS THE SCORE (does not disqualify):
+- Angular listed as core/required -> -15 points
+- Terraform or Kubernetes as core requirement -> -10 points
+- Primary stack is Java/Go/Python with C# as cosmetic OR-list -> -20 points
+- On-site only (no remote/hybrid) -> -5 points
+- No salary disclosed -> -3 points
+- Small company (<50 employees) with no verifiable web presence -> -5 points
+- Role requires 5+ years with no flexibility -> -5 points
+
+ANGULAR RULE:
+- Angular as CORE/REQUIRED -> -15 pts
+- Angular as NICE-TO-HAVE/MENTIONED -> no penalty
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KNOWN FALSE POSITIVE PATTERNS — SCORE 0 IMMEDIATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- "Adtran Software Engineer" -> embedded C/C++ firmware, NOT C#/.NET
+- "Peraton" any role -> defense contractor, almost always clearance required
+- "DataAnnotation" -> gig-based AI labeling, not software engineering
+- "FetchJobs.co" -> job board aggregator, not a real employer
+- "Mon Sinistre Afrique", "Rotaract Club", "IndTech Calibration" -> non-tech orgs
+- HackerRank SDET -> QA/test automation, not backend engineering
+- Any Sophos role "Remote in UK" -> non-US, hard disqualifier
+- Boeing "Software Engineer-Simulation" -> avionics/defense simulation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL CHECK BEFORE SCORING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before returning your score, verify these 5 things:
+1. Did any hard disqualifier trigger? -> Score 0 if yes
+2. Is C#/.NET the actual core stack, or cosmetic in an OR-list?
+3. Is the role type correct? (backend/full-stack SWE, NOT QA/infra/embedded/data eng)
+4. Is the location actually in the US?
+5. Are the responsibilities things she has actually done?
+   (microservices, REST APIs, cloud services, backend systems)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT — RETURN ONLY THIS JSON, NOTHING ELSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{"score": <0-100>, "reason": "<2-3 sentences>", "verdict": "<STRONG_FIT|GOOD_FIT|NEAR_MISS|FLAGGED|EXCLUDED>", "flag": "<null or disqualifier reason>"}
+"""
+
+
 def score_job(provider: str, client, profile: str, job: dict, description: str) -> dict:
     """
-    Ask Gemini to score the job match 0-100 and give a short reason.
-    Returns dict with 'score' (int) and 'reason' (str).
+    Score job fit using the expert SYSTEM_PROMPT evaluator.
+    Returns dict with score, reason, verdict, flag.
     """
-    prompt = f"""You are a career matching engine. Score how well this candidate matches this job on a scale of 0 to 100.
-
-CANDIDATE PROFILE:
-{profile}
-
-JOB DETAILS:
+    job_text = f"""Job to evaluate:
+Title: {job['role']}
 Company: {job['company']}
-Role: {job['role']}
 Location: {job['location']}
-
-JOB DESCRIPTION:
-{description if description else "(no description available — score based on job title and role only)"}
-
-SCORING CRITERIA (weight in order):
-1. Tech stack overlap — languages, frameworks, cloud platforms, databases the candidate actually has
-2. Role level fit — candidate is a new grad (MS graduating Aug 2026, ~3 years prior industry experience as SWE) — penalize senior/staff roles, reward new grad / entry-level / 0-2 YOE roles
-3. Domain fit — backend engineering, distributed systems, cloud application development, APIs
-4. Authorization — candidate is on F-1 OPT (no sponsorship needed for first 3 years); penalize only if job explicitly says "no visa sponsorship" AND OPT is not accepted
-5. Location — candidate is open to anywhere in the US; penalize only if job is outside the US or explicitly remote-excluded
-
-PENALIZE HEAVILY (score below 35) if the job primarily requires:
-- Terraform / Infrastructure as Code
-- Kubernetes orchestration
-- Cloud networking (VPC/VNet design, Private Link, DNS)
-- IAM/Entra ID platform engineering
-- Hardware or embedded systems
-
-Respond with ONLY a JSON object — no markdown, no text outside the JSON:
-{{"score": <integer 0-100>, "reason": "<one concise sentence: the strongest match signal or the key mismatch>"}}"""
+Description: {description if description else '(no description available — score based on title only)'}"""
 
     try:
-        text = call_llm(provider, client, prompt, max_tokens=256)
+        text = call_llm(provider, client, job_text, max_tokens=512, system_prompt=SYSTEM_PROMPT)
 
-        # strip markdown code fences if present
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
 
@@ -535,24 +719,32 @@ Respond with ONLY a JSON object — no markdown, no text outside the JSON:
             return {
                 "score": int(data.get("score", 0)),
                 "reason": str(data.get("reason", "")),
+                "verdict": str(data.get("verdict", "")),
+                "flag": str(data.get("flag") or ""),
             }
     except Exception as e:
-        print(f"  [warn] Scoring failed for {job['company']} – {job['role']}: {e}")
+        print(f"  [warn] Scoring failed for {job['company']} - {job['role']}: {e}")
 
-    return {"score": 0, "reason": "scoring error"}
+    return {"score": 0, "reason": "scoring error", "verdict": "EXCLUDED", "flag": "parse_error"}
 
 
 # ── LLM provider ──────────────────────────────────────────────────────────────
 
-def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024) -> str:
+def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024, system_prompt: str = None) -> str:
     """Unified LLM call — works with either Gemini or Groq client."""
     if provider == "gemini":
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+        from google.genai import types
+        config = types.GenerateContentConfig(system_instruction=system_prompt) if system_prompt else None
+        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt, config=config)
         return response.text.strip()
     else:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
         response = client.chat.completions.create(
             model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content.strip()
@@ -702,9 +894,13 @@ def main():
         scored = score_job(provider, client, profile_text, job, description)
         job["score"] = scored["score"]
         job["reason"] = scored["reason"]
-        print(f"  Score: {job['score']}/100 — {job['reason']}")
+        job["verdict"] = scored.get("verdict", "")
+        job["flag"] = scored.get("flag") or ""
+        print(f"  Score: {job['score']}/100 [{job['verdict']}] — {job['reason']}")
+        if job["flag"]:
+            print(f"  Flag: {job['flag']}")
 
-        if job["score"] >= MIN_SCORE:
+        if job["score"] >= MIN_SCORE and job["verdict"] != "EXCLUDED":
             results.append(job)
 
     # ── Write CSV ──
@@ -712,7 +908,7 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = f"jobs_{timestamp}.csv"
 
-    fieldnames = ["score", "company", "role", "location", "posted", "reason", "source", "url"]
+    fieldnames = ["score", "verdict", "flag", "company", "role", "location", "posted", "reason", "source", "url"]
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
