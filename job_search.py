@@ -195,6 +195,16 @@ WORKDAY_COMPANIES = [
     ("cognizant", "cognizant"),
 ]
 
+# Companies where the ATS slug could not be auto-confirmed.
+# To fix: google "{company name} careers site:myworkdayjobs.com" (Workday)
+#         or visit boards.greenhouse.io/{slug} (Greenhouse)
+#         or visit jobs.lever.co/{slug} (Lever)
+# BEGIN_UNCONFIRMED
+UNCONFIRMED_SLUGS = {
+    # "Company Name": ("ats_type", "slug_tried", "manual_fix_url"),
+}
+# END_UNCONFIRMED
+
 # Titles containing these words are skipped — they signal senior/management roles
 # not suitable for a new-grad candidate.
 SENIOR_TITLE_KEYWORDS = [
@@ -551,6 +561,274 @@ def _parse_html_table(content: str) -> list[dict]:
         jobs.append({"company": company, "role": role, "location": location, "url": apply_url, "posted": posted})
 
     return jobs
+
+
+# ─── Slug validation helpers ──────────────────────────────────────────────────
+
+def _check_greenhouse(slug: str) -> int | None:
+    """Return job count if slug returns HTTP 200, else None."""
+    url = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        if r.status_code == 200:
+            return len(r.json().get("jobs", []))
+    except Exception:
+        pass
+    return None
+
+
+def _check_lever(slug: str) -> int | None:
+    """Return posting count if slug returns HTTP 200 with a JSON list, else None."""
+    url = f"https://api.lever.co/v0/postings/{slug}?mode=json"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, list):
+                return len(data)
+    except Exception:
+        pass
+    return None
+
+
+def _greenhouse_variations(slug: str) -> list[str]:
+    """Return candidate slug variations to try when base slug fails."""
+    shorthand = {
+        "modernizingmedicine": "modmed", "pointclickcare": "pcc",
+        "guidewiresoftware": "guidewire", "duckcreektechnologies": "duckcreek",
+        "appliedsystems": "ezlynx", "westmonroe": "westmonroepartners",
+    }
+    candidates = []
+    stripped = re.sub(r"[^a-z0-9]", "", slug)
+    if stripped != slug:
+        candidates.append(stripped)
+    candidates.append(slug + "inc")
+    for suffix in ["technologies", "systems", "software", "labs", "health"]:
+        v = slug + suffix
+        if v != slug:
+            candidates.append(v)
+    if slug in shorthand:
+        candidates.append(shorthand[slug])
+    seen: set[str] = {slug}
+    return [c for c in candidates if c not in seen and not seen.add(c)]  # type: ignore[func-returns-value]
+
+
+def _lever_variations(slug: str) -> list[str]:
+    """Return candidate Lever slug variations to try when base slug fails."""
+    shorthand = {
+        "guidewiresoftware": "guidewire", "duckcreektechnologies": "duckcreek",
+        "publicissapient": "sapient", "netsmart": "netsmartechnologies",
+    }
+    candidates = []
+    no_hyphens = slug.replace("-", "")
+    if no_hyphens != slug:
+        candidates.append(no_hyphens)
+    for suffix in ["inc", "hq", "careers", "software"]:
+        candidates.append(slug + suffix)
+    for suffix in ["software", "inc", "hq"]:
+        if slug.endswith(suffix) and len(slug) > len(suffix):
+            candidates.append(slug[: -len(suffix)])
+    if slug in shorthand:
+        candidates.append(shorthand[slug])
+    seen: set[str] = {slug}
+    return [c for c in candidates if c not in seen and not seen.add(c)]  # type: ignore[func-returns-value]
+
+
+def _workday_tenant_variations(tenant: str) -> list[str]:
+    """Return candidate Workday tenant slug variations to try when base tenant fails."""
+    shorthand = {
+        "ltimindtree": "mindtree", "mrisoftware": "mri",
+        "fisglobal": "fis", "bentleysystems": "bentley",
+    }
+    candidates = []
+    for suffix in ["inc", "corp", "llc"]:
+        candidates.append(tenant + suffix)
+    for suffix in ["inc", "corp", "systems", "technologies"]:
+        if tenant.endswith(suffix) and len(tenant) > len(suffix):
+            candidates.append(tenant[: -len(suffix)])
+    candidates.append(tenant + "careers")
+    if tenant in shorthand:
+        candidates.append(shorthand[tenant])
+    seen: set[str] = {tenant}
+    return [c for c in candidates if c not in seen and not seen.add(c)]  # type: ignore[func-returns-value]
+
+
+def _patch_job_search_py(results: dict) -> None:
+    """Rewrite job_search.py in-place: fix confirmed slugs, comment out failures, update UNCONFIRMED_SLUGS."""
+    script_path = os.path.abspath(__file__)
+    with open(script_path, "r") as f:
+        content = f.read()
+
+    failed_entries = []
+
+    for key, info in results.items():
+        ats = info["ats"]
+        status = info["status"]
+        fixed = info.get("fixed")
+
+        if ats == "greenhouse":
+            if status == "fixed":
+                content = re.sub(
+                    rf'(\s+)"{re.escape(key)}"(,)',
+                    rf'\1"{fixed}"\2  # was: {key}',
+                    content, count=1,
+                )
+            elif status == "failed":
+                content = re.sub(
+                    rf'^(\s+)"{re.escape(key)}"(,.*)',
+                    rf'\1# "{key}"\2  # UNCONFIRMED',
+                    content, count=1, flags=re.MULTILINE,
+                )
+                failed_entries.append((key.title(), "greenhouse", key,
+                                       f"https://boards.greenhouse.io/{key}"))
+
+        elif ats == "lever":
+            if status == "fixed":
+                content = re.sub(
+                    rf'(\s+)"{re.escape(key)}"(,)',
+                    rf'\1"{fixed}"\2  # was: {key}',
+                    content, count=1,
+                )
+            elif status == "failed":
+                content = re.sub(
+                    rf'^(\s+)"{re.escape(key)}"(,.*)',
+                    rf'\1# "{key}"\2  # UNCONFIRMED',
+                    content, count=1, flags=re.MULTILINE,
+                )
+                failed_entries.append((key.title(), "lever", key,
+                                       f"https://jobs.lever.co/{key}"))
+
+    # Rebuild UNCONFIRMED_SLUGS block using sentinel comments as anchors
+    if failed_entries:
+        new_entries = "\n".join(
+            f'    "{name}": ("{ats}", "{slug}", "{url}"),'
+            for name, ats, slug, url in failed_entries
+        )
+        new_block = (
+            "# BEGIN_UNCONFIRMED\n"
+            "UNCONFIRMED_SLUGS = {\n"
+            '    # "Company Name": ("ats_type", "slug_tried", "manual_fix_url"),\n'
+            f"{new_entries}\n"
+            "}\n"
+            "# END_UNCONFIRMED"
+        )
+        content = re.sub(
+            r"# BEGIN_UNCONFIRMED\nUNCONFIRMED_SLUGS\s*=\s*\{.*?\}\n# END_UNCONFIRMED",
+            new_block,
+            content,
+            flags=re.DOTALL,
+        )
+
+    with open(script_path, "w") as f:
+        f.write(content)
+
+
+def run_slug_validation() -> None:
+    """Test every ATS slug, auto-try variations, patch job_search.py, print summary."""
+    results = {}
+
+    # ── Greenhouse ─────────────────────────────────────────────────────────────
+    print("\nValidating Greenhouse slugs...")
+    for slug in GREENHOUSE_COMPANIES:
+        count = _check_greenhouse(slug)
+        if count is not None:
+            results[slug] = {"ats": "greenhouse", "status": "ok", "count": count}
+            print(f"  ✅ greenhouse/{slug} → {count} jobs")
+        else:
+            fixed_slug = None
+            fixed_count = 0
+            for variant in _greenhouse_variations(slug):
+                c = _check_greenhouse(variant)
+                if c is not None:
+                    fixed_slug = variant
+                    fixed_count = c
+                    break
+            if fixed_slug:
+                results[slug] = {"ats": "greenhouse", "status": "fixed",
+                                 "count": fixed_count, "fixed": fixed_slug}
+                print(f"  ✅ greenhouse/{slug} → fixed as '{fixed_slug}' ({fixed_count} jobs)")
+            else:
+                results[slug] = {"ats": "greenhouse", "status": "failed"}
+                print(f"  ❌ greenhouse/{slug} → no working slug found")
+        time.sleep(0.3)
+
+    # ── Lever ──────────────────────────────────────────────────────────────────
+    print("\nValidating Lever slugs...")
+    for slug in LEVER_COMPANIES:
+        count = _check_lever(slug)
+        if count is not None:
+            results[slug] = {"ats": "lever", "status": "ok", "count": count}
+            print(f"  ✅ lever/{slug} → {count} postings")
+        else:
+            fixed_slug = None
+            fixed_count = 0
+            for variant in _lever_variations(slug):
+                c = _check_lever(variant)
+                if c is not None:
+                    fixed_slug = variant
+                    fixed_count = c
+                    break
+            if fixed_slug:
+                results[slug] = {"ats": "lever", "status": "fixed",
+                                 "count": fixed_count, "fixed": fixed_slug}
+                print(f"  ✅ lever/{slug} → fixed as '{fixed_slug}' ({fixed_count} postings)")
+            else:
+                results[slug] = {"ats": "lever", "status": "failed"}
+                print(f"  ❌ lever/{slug} → no working slug found")
+        time.sleep(0.3)
+
+    # ── Workday ────────────────────────────────────────────────────────────────
+    # Workday uses wildcard DNS + Cloudflare CDN — HTTP-based validation returns the
+    # same 422 error for all tenants (real or fake) without a real browser session.
+    # Validation requires Playwright and is deferred to the actual fetch run.
+    print(f"\nWorkday: HTTP validation not possible (Cloudflare-protected, wildcard DNS).")
+    print(f"  Skipping {len(WORKDAY_COMPANIES)} Workday tenants — validated at runtime by fetch_workday_jobs().")
+    for tenant, board in WORKDAY_COMPANIES:
+        results[(tenant, board)] = {"ats": "workday", "status": "skipped"}
+
+    # ── Patch file ─────────────────────────────────────────────────────────────
+    needs_patch = any(v["status"] in ("fixed", "failed") for v in results.values()
+                      if v["ats"] != "workday")
+    if needs_patch:
+        print("\nPatching job_search.py...")
+        _patch_job_search_py(results)
+        print("  Done.")
+
+    # ── Summary ────────────────────────────────────────────────────────────────
+    def _counts(ats: str):
+        subset = [v for v in results.values() if v["ats"] == ats]
+        ok = sum(1 for v in subset if v["status"] == "ok")
+        fixed = sum(1 for v in subset if v["status"] == "fixed")
+        failed = sum(1 for v in subset if v["status"] == "failed")
+        skipped = sum(1 for v in subset if v["status"] == "skipped")
+        return ok, fixed, failed, skipped
+
+    gh_ok, gh_fix, gh_fail, _ = _counts("greenhouse")
+    lv_ok, lv_fix, lv_fail, _ = _counts("lever")
+    _, _, _, wd_skip = _counts("workday")
+
+    print("\n" + "━" * 40)
+    print("VALIDATION SUMMARY")
+    print(f"  Greenhouse: {gh_ok} ok, {gh_fix} fixed, {gh_fail} failed")
+    print(f"  Lever:      {lv_ok} ok, {lv_fix} fixed, {lv_fail} failed")
+    print(f"  Workday:    {wd_skip} skipped (Cloudflare-protected — validated at runtime)")
+
+    failed_entries = [(k, v) for k, v in results.items()
+                      if v["status"] == "failed" and v["ats"] != "workday"]
+    if failed_entries:
+        print("\nUNCONFIRMED SLUGS — manual fix needed")
+        print("━" * 40)
+        for key, info in failed_entries:
+            ats = info["ats"]
+            if ats == "greenhouse":
+                print(f"  {key}: check https://boards.greenhouse.io/{key}")
+            else:
+                print(f"  {key}: check https://jobs.lever.co/{key}")
+    else:
+        print("\nAll Greenhouse and Lever slugs confirmed ✅")
+
+
+# ─── End slug validation helpers ──────────────────────────────────────────────
 
 
 def fetch_json(url: str) -> dict:
@@ -1037,7 +1315,13 @@ def main():
     parser.add_argument("--update", metavar="FACT", help="Merge a new fact into profile_data.md")
     parser.add_argument("--show", action="store_true", help="Print the current profile_data.md")
     parser.add_argument("--today", action="store_true", help="Only include jobs posted within the last 24 hours")
+    parser.add_argument("--validate-slugs", action="store_true",
+                        help="Test all ATS slugs live, auto-fix variations, comment out failures")
     args = parser.parse_args()
+
+    if args.validate_slugs:
+        run_slug_validation()
+        return
 
     if args.show:
         print(load_profile_doc())
