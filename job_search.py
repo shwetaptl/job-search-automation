@@ -55,11 +55,52 @@ GITHUB_SOURCES = [
 # Companies that publish open job boards via the Greenhouse API.
 # Add or remove slugs freely — the API is public and requires no key.
 GREENHOUSE_COMPANIES = [
-    "stripe", "airbnb", "figma", "discord", "reddit",
-    "cloudflare", "databricks", "robinhood", "coinbase", "brex",
-    "gusto", "lyft", "pinterest", "twitch", "dropbox",
-    "hubspot", "asana", "okta", "mongodb",
-    "amplitude", "lattice", "anthropic",
+    "inovalon",  # Inovalon (59 jobs)
+    "athena",  # athenahealth (2 jobs)
+    "brex",  # Brex (252 jobs)
+    "robinhood",  # Robinhood (132 jobs)
+    "coinbase",  # Coinbase (129 jobs)
+    "sofi",  # SoFi (93 jobs)
+    "affirm",  # Affirm (172 jobs)
+    "marqeta",  # Marqeta (35 jobs)
+    "chime",  # Chime (64 jobs)
+    "block",  # Square / Block (206 jobs)
+    "solera",  # Solera (0 jobs)
+    "nice",  # NICE Systems (338 jobs)
+    "qualtrics",  # Qualtrics (59 jobs)
+    "hubspot",  # HubSpot (0 jobs)
+    "okta",  # Okta (374 jobs)
+    "mongodb",  # MongoDB (400 jobs)
+    "elastic",  # Elastic (205 jobs)
+    "datadog",  # Datadog (412 jobs)
+    "twilio",  # Twilio (152 jobs)
+    "cloudflare",  # Cloudflare (228 jobs)
+    "zscaler",  # Zscaler (317 jobs)
+    "databricks",  # Databricks (786 jobs)
+    "newrelic",  # New Relic (55 jobs)
+    "pagerduty",  # PagerDuty (24 jobs)
+    "sumologic",  # Sumo Logic (24 jobs)
+    "grafanalabs",  # Grafana Labs (99 jobs)
+    "sisense",  # Sisense (11 jobs)
+    "amplitude",  # Amplitude (49 jobs)
+    "lattice",  # Lattice (11 jobs)
+    "discord",  # Discord (62 jobs)
+    "reddit",  # Reddit (183 jobs)
+    "asana",  # Asana (151 jobs)
+    "flexport",  # Flexport (129 jobs)
+    "pingidentity",  # Ping Identity (37 jobs)
+    "onespan",  # OneSpan (28 jobs)
+    "thoughtworks",  # Thoughtworks (79 jobs)
+    "tcs",  # TCS (77 jobs)
+    "stripe",  # Stripe (488 jobs)
+    "airbnb",  # Airbnb (225 jobs)
+    "figma",  # Figma (172 jobs)
+    "lyft",  # Lyft (151 jobs)
+    "pinterest",  # Pinterest (187 jobs)
+    "twitch",  # Twitch (64 jobs)
+    "dropbox",  # Dropbox (55 jobs)
+    "gusto",  # Gusto (78 jobs)
+    "anthropic",  # Anthropic (389 jobs)
 ]
 
 # Titles containing these words are skipped — they signal senior/management roles
