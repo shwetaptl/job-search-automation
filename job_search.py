@@ -103,6 +103,58 @@ GREENHOUSE_COMPANIES = [
     "anthropic",  # Anthropic (389 jobs)
 ]
 
+# Companies using Lever ATS — verified via API, free public JSON, full descriptions in response.
+LEVER_COMPANIES = [
+    "ro",             # healthcare tech — backend SWE roles
+    "metabase",       # data/analytics — Python/Java backend
+    "outreach",       # sales tech SaaS — backend eng
+    "pivotal",        # software consulting — Java/Python
+    "mistral",        # AI/LLM — Paris-based, H1B unclear but strong eng brand
+    "cloudinary",     # media CDN — backend/SDK eng
+    "zimperium",      # mobile cybersecurity
+    "anomali",        # threat intelligence cybersecurity
+    "coalfire",       # cybersecurity consulting
+    "contentsquare",  # digital analytics
+    "nium",           # fintech payments — H1B sponsor
+    "matillion",      # data integration/ETL
+    "highspot",       # sales enablement SaaS
+    "arcadia",        # healthcare data platform
+    "sonatype",       # dev tools / supply chain security
+    "logrocket",      # frontend observability
+    "neon",           # Postgres cloud database
+]
+
+# Companies using Workday ATS — search API returns titles/URLs; descriptions fetched via Playwright.
+# Format: (tenant_slug, career_board_name)
+WORKDAY_COMPANIES = [
+    ("servicenow", "ServiceNow"),
+    ("snowflake", "Snowflake"),
+    ("crowdstrike", "crowdstrike"),
+    ("medtronic", "medtronic"),
+    ("gehealthcare", "GE_HealthCare"),
+    ("philips", "philips"),
+    ("tylertech", "Tyler_Technologies"),
+    ("trimble", "Trimble"),
+    ("fiserv", "fiserv"),
+    ("fisglobal", "FIS"),
+    ("jackhenry", "jackhenry"),
+    ("broadridge", "Broadridge"),
+    ("morningstar", "morningstar"),
+    ("autodesk", "Autodesk"),
+    ("paloaltonetworks", "paloaltonetworks"),
+    ("fortinet", "fortinet"),
+    ("sailpoint", "sailpoint"),
+    ("rapid7", "rapid7"),
+    ("dynatrace", "dynatrace"),
+    ("splunk", "splunk"),
+    ("procore", "procore"),
+    ("atlassian", "atlassian"),
+    ("instructure", "instructure"),
+    ("opentext", "opentext"),
+    ("pegasystems", "pega"),
+    ("informatica", "informatica"),
+]
+
 # Titles containing these words are skipped — they signal senior/management roles
 # not suitable for a new-grad candidate.
 SENIOR_TITLE_KEYWORDS = [
@@ -527,6 +579,126 @@ def fetch_greenhouse_jobs(companies: list[str]) -> list[dict]:
     return jobs
 
 
+def fetch_lever_jobs(companies: list[str]) -> list[dict]:
+    """
+    Fetch entry-level SWE jobs from Lever ATS company boards.
+    Lever returns full plain-text descriptions in the API response — no page scrape needed.
+    """
+    jobs = []
+    for slug in companies:
+        url = f"https://api.lever.co/v0/postings/{slug}?mode=json"
+        postings = fetch_json(url)
+        if isinstance(postings, dict):
+            postings = postings.get("data", [])
+        if not isinstance(postings, list):
+            continue
+        for posting in postings:
+            title = posting.get("text", "")
+            if not is_entry_level_title(title):
+                continue
+            cats = posting.get("categories", {})
+            created_ms = posting.get("createdAt", 0)
+            posted_iso = datetime.utcfromtimestamp(created_ms / 1000).isoformat() if created_ms else ""
+            description = posting.get("descriptionPlain", "") or _parse_html_to_text(posting.get("description", ""))
+            jobs.append({
+                "company": posting.get("company", slug.title()),
+                "role": title,
+                "location": cats.get("location", ""),
+                "url": posting.get("hostedUrl", ""),
+                "posted": posted_iso,
+                "description": description[:8000],
+                "source": "lever",
+            })
+        time.sleep(REQUEST_DELAY)
+    return jobs
+
+
+def _find_workday_subdomain(tenant: str) -> int | None:
+    """Find which wd1–wd5 subdomain a Workday tenant is on by checking DNS."""
+    import socket
+    for n in range(1, 6):
+        host = f"{tenant}.wd{n}.myworkdayjobs.com"
+        try:
+            socket.getaddrinfo(host, 443)
+            return n
+        except OSError:
+            pass
+    return None
+
+
+def fetch_workday_jobs(companies: list[tuple]) -> list[dict]:
+    """
+    Fetch entry-level SWE jobs from Workday ATS boards via Playwright (Cloudflare-protected).
+    Workday's JSON search API requires a real browser session — we use Playwright to intercept
+    the XHR response from the jobs endpoint.
+    """
+    if not PLAYWRIGHT_AVAILABLE:
+        print("  [skip] Workday: Playwright not installed — run: pip install playwright && playwright install chromium")
+        return []
+
+    jobs = []
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(user_agent=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        ))
+
+        for tenant, board in companies:
+            n = _find_workday_subdomain(tenant)
+            if not n:
+                print(f"  [skip] Workday: DNS not found for {tenant}")
+                continue
+            base = f"https://{tenant}.wd{n}.myworkdayjobs.com"
+            search_page = f"{base}/en-US/{board}?q=software+engineer"
+
+            captured = []
+
+            def _on_response(response):
+                if "/jobs" in response.url and "wday/cxs" in response.url:
+                    try:
+                        data = response.json()
+                        captured.append(data)
+                    except Exception:
+                        pass
+
+            page = context.new_page()
+            page.on("response", _on_response)
+            try:
+                page.goto(search_page, timeout=20000, wait_until="networkidle")
+                page.wait_for_timeout(2000)
+            except Exception as e:
+                print(f"  [warn] Workday page load failed for {tenant}: {e}")
+                page.close()
+                time.sleep(REQUEST_DELAY)
+                continue
+
+            page.close()
+
+            for data in captured:
+                for posting in data.get("jobPostings", []):
+                    title = posting.get("title", "")
+                    if not is_entry_level_title(title):
+                        continue
+                    ext_path = posting.get("externalPath", "")
+                    apply_url = f"{base}/{board}/job/{ext_path}" if ext_path else ""
+                    jobs.append({
+                        "company": tenant.title(),
+                        "role": title,
+                        "location": posting.get("locationsText", ""),
+                        "url": apply_url,
+                        "posted": "",
+                        "description": "",
+                        "source": "workday",
+                    })
+            time.sleep(REQUEST_DELAY)
+
+        browser.close()
+    return jobs
+
+
 SYSTEM_PROMPT = """
 You are a strict, expert job-fit evaluator. Your job is to score how well a specific
 job posting matches a specific candidate profile. You return ONLY a JSON object.
@@ -896,6 +1068,16 @@ def main():
     gh_jobs = fetch_greenhouse_jobs(GREENHOUSE_COMPANIES)
     print(f"  Found {len(gh_jobs)} entry-level positions across Greenhouse boards")
     all_jobs.extend(gh_jobs)
+
+    print(f"\nFetching jobs from Lever ({len(LEVER_COMPANIES)} companies)...")
+    lv_jobs = fetch_lever_jobs(LEVER_COMPANIES)
+    print(f"  Found {len(lv_jobs)} entry-level positions across Lever boards")
+    all_jobs.extend(lv_jobs)
+
+    print(f"\nFetching jobs from Workday ({len(WORKDAY_COMPANIES)} companies)...")
+    wd_jobs = fetch_workday_jobs(WORKDAY_COMPANIES)
+    print(f"  Found {len(wd_jobs)} entry-level positions across Workday boards")
+    all_jobs.extend(wd_jobs)
 
     # deduplicate by URL
     seen_urls = set()
