@@ -200,7 +200,7 @@ SENIOR_TITLE_KEYWORDS = [
 
 GEMINI_MODEL = "gemini-2.0-flash"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
-MIN_SCORE = 60          # jobs below this score are skipped in output
+MIN_SCORE = 50          # jobs below this score are skipped in output
 MAX_JOBS = 200          # safety cap — process at most this many jobs
 REQUEST_DELAY = 0.5     # seconds between HTTP requests (be polite)
 REQUEST_TIMEOUT = 10    # seconds per HTTP request
@@ -1216,7 +1216,10 @@ def score_job(provider: str, client, profile: str, job: dict, description: str) 
     Score job fit using the expert SYSTEM_PROMPT evaluator.
     Returns dict with score, reason, verdict, flag.
     """
-    job_text = f"""Job to evaluate:
+    job_text = f"""CANDIDATE PROFILE:
+{profile}
+
+Job to evaluate:
 Title: {job['role']}
 Company: {job['company']}
 Location: {job['location']}
