@@ -200,7 +200,7 @@ SENIOR_TITLE_KEYWORDS = [
 
 GEMINI_MODEL = "gemini-2.0-flash"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
-MIN_SCORE = 50          # jobs below this score are skipped in output
+MIN_SCORE = 40          # jobs below this score are skipped in output
 MAX_JOBS = 200          # safety cap — process at most this many jobs
 REQUEST_DELAY = 0.5     # seconds between HTTP requests (be polite)
 REQUEST_TIMEOUT = 10    # seconds per HTTP request
@@ -1216,10 +1216,7 @@ def score_job(provider: str, client, profile: str, job: dict, description: str) 
     Score job fit using the expert SYSTEM_PROMPT evaluator.
     Returns dict with score, reason, verdict, flag.
     """
-    job_text = f"""CANDIDATE PROFILE:
-{profile}
-
-Job to evaluate:
+    job_text = f"""Job to evaluate:
 Title: {job['role']}
 Company: {job['company']}
 Location: {job['location']}
@@ -1261,12 +1258,23 @@ def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024, system_
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        response = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=messages,
-            max_tokens=max_tokens,
-        )
-        return response.choices[0].message.content.strip()
+        for attempt in range(3):
+            try:
+                response = client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                err = str(e).lower()
+                if "429" in err or "rate_limit" in err or "rate limit" in err:
+                    wait = 60 * (attempt + 1)
+                    print(f"  [rate limit] Groq quota hit — waiting {wait}s before retry {attempt + 1}/3...")
+                    time.sleep(wait)
+                else:
+                    raise
+        raise RuntimeError("Groq rate limit: failed after 3 retries")
 
 
 def get_llm_client() -> tuple:
@@ -1437,6 +1445,23 @@ def main():
 
         if job["score"] >= MIN_SCORE and job["verdict"] != "EXCLUDED":
             results.append(job)
+
+    # ── Score distribution (diagnosis) ──
+    all_scored = [j for j in unique_jobs if "score" in j]
+    buckets = {"0 (error/excluded)": 0, "1–30": 0, "31–40": 0, "41–50": 0, "51–65": 0, "66–79": 0, "80+": 0}
+    for j in all_scored:
+        s = j["score"]
+        if s == 0:           buckets["0 (error/excluded)"] += 1
+        elif s <= 30:        buckets["1–30"] += 1
+        elif s <= 40:        buckets["31–40"] += 1
+        elif s <= 50:        buckets["41–50"] += 1
+        elif s <= 65:        buckets["51–65"] += 1
+        elif s <= 79:        buckets["66–79"] += 1
+        else:                buckets["80+"] += 1
+    print("\nScore distribution:")
+    for label, count in buckets.items():
+        bar = "█" * count
+        print(f"  {label:22s}: {count:3d}  {bar}")
 
     # ── Write CSV ──
     results.sort(key=lambda x: x["score"], reverse=True)
