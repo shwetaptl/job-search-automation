@@ -16,7 +16,7 @@ import re
 import time
 import os
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -901,7 +901,7 @@ def fetch_lever_jobs(companies: list[str]) -> list[dict]:
                 continue
             cats = posting.get("categories", {})
             created_ms = posting.get("createdAt", 0)
-            posted_iso = datetime.utcfromtimestamp(created_ms / 1000).isoformat() if created_ms else ""
+            posted_iso = datetime.fromtimestamp(created_ms / 1000, tz=timezone.utc).isoformat() if created_ms else ""
             description = posting.get("descriptionPlain", "") or _parse_html_to_text(posting.get("description", ""))
             jobs.append({
                 "company": posting.get("company", slug.title()),
