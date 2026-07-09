@@ -52,132 +52,26 @@ GITHUB_SOURCES = [
     },
 ]
 
-# Companies that publish open job boards via the Greenhouse API.
-# Add or remove slugs freely — the API is public and requires no key.
+# Companies verified 2026-07-08 to have C#/.NET/Azure jobs via live API check.
+# Only companies with confirmed C# SWE job descriptions are included.
 GREENHOUSE_COMPANIES = [
-    "inovalon",  # Inovalon (59 jobs)
-    "athena",  # athenahealth (2 jobs)
-    "brex",  # Brex (252 jobs)
-    "robinhood",  # Robinhood (132 jobs)
-    "coinbase",  # Coinbase (129 jobs)
-    "sofi",  # SoFi (93 jobs)
-    "affirm",  # Affirm (172 jobs)
-    "marqeta",  # Marqeta (35 jobs)
-    "chime",  # Chime (64 jobs)
-    "block",  # Square / Block (206 jobs)
-    "solera",  # Solera (0 jobs)
-    "nice",  # NICE Systems (338 jobs)
-    "qualtrics",  # Qualtrics (59 jobs)
-    "hubspot",  # HubSpot (0 jobs)
-    "okta",  # Okta (374 jobs)
-    "mongodb",  # MongoDB (400 jobs)
-    "elastic",  # Elastic (205 jobs)
-    "datadog",  # Datadog (412 jobs)
-    "twilio",  # Twilio (152 jobs)
-    "cloudflare",  # Cloudflare (228 jobs)
-    "zscaler",  # Zscaler (317 jobs)
-    "databricks",  # Databricks (786 jobs)
-    "newrelic",  # New Relic (55 jobs)
-    "pagerduty",  # PagerDuty (24 jobs)
-    "sumologic",  # Sumo Logic (24 jobs)
-    "grafanalabs",  # Grafana Labs (99 jobs)
-    "sisense",  # Sisense (11 jobs)
-    "amplitude",  # Amplitude (49 jobs)
-    "lattice",  # Lattice (11 jobs)
-    "discord",  # Discord (62 jobs)
-    "reddit",  # Reddit (183 jobs)
-    "asana",  # Asana (151 jobs)
-    "flexport",  # Flexport (129 jobs)
-    "pingidentity",  # Ping Identity (37 jobs)
-    "onespan",  # OneSpan (28 jobs)
-    "thoughtworks",  # Thoughtworks (79 jobs)
-    "tcs",  # TCS (77 jobs)
-    "stripe",  # Stripe (488 jobs)
-    "airbnb",  # Airbnb (225 jobs)
-    "figma",  # Figma (172 jobs)
-    "lyft",  # Lyft (151 jobs)
-    "pinterest",  # Pinterest (187 jobs)
-    "twitch",  # Twitch (64 jobs)
-    "dropbox",  # Dropbox (55 jobs)
-    "gusto",  # Gusto (78 jobs)
-    "anthropic",  # Anthropic (389 jobs)
-    "harnessinc",  # was: harness             # Harness — CI/CD platform
-    "sentinellabs",        # SentinelOne — cybersecurity
-    "fractalsoftware",  # was: fractal             # Fractal Analytics — AI/data
+    "inovalon",  # healthcare data — 19 confirmed C#/.NET/Azure jobs
+    "truveta",   # healthcare data — 20 confirmed C#/.NET/Azure jobs
+    "onespan",   # digital banking security — 7 confirmed C#/.NET jobs
 ]
 
-# Companies using Lever ATS — verified via API, free public JSON, full descriptions in response.
+# Companies verified to have C#/.NET/Azure jobs via Lever API (descriptionPlain checked).
 LEVER_COMPANIES = [
-    "ro",             # healthcare tech — backend SWE roles
-    "metabase",       # data/analytics — Python/Java backend
-    "outreach",       # sales tech SaaS — backend eng
-    "pivotal",        # software consulting — Java/Python
-    "mistral",        # AI/LLM — Paris-based, H1B unclear but strong eng brand
-    "cloudinary",     # media CDN — backend/SDK eng
-    "zimperium",      # mobile cybersecurity
-    "anomali",        # threat intelligence cybersecurity
-    "coalfire",       # cybersecurity consulting
-    "contentsquare",  # digital analytics
-    "nium",           # fintech payments — H1B sponsor
-    "matillion",      # data integration/ETL
-    "highspot",       # sales enablement SaaS
-    "arcadia",        # healthcare data platform
-    "sonatype",       # dev tools / supply chain security
-    "logrocket",      # frontend observability
-    "neon",               # Postgres cloud database
-    "plaid",              # fintech payments — moved from Greenhouse
-    "pointclickcare",     # senior care SaaS — H1B sponsor
+    "pointclickcare",  # long-term care SaaS — 13 confirmed C#/.NET/Azure jobs
 ]
 
-# Companies using Workday ATS — search API returns titles/URLs; descriptions fetched via Playwright.
+# Companies verified to have C# SWE titles via Workday searchText="C# .NET".
 # Format: (tenant_slug, career_board_name)
 WORKDAY_COMPANIES = [
-    ("servicenow", "ServiceNow"),
-    ("snowflake", "Snowflake"),
-    ("crowdstrike", "crowdstrike"),
-    ("medtronic", "medtronic"),
-    ("gehealthcare", "GE_HealthCare"),
-    ("philips", "philips"),
-    ("tylertech", "Tyler_Technologies"),
-    ("trimble", "Trimble"),
-    ("fiserv", "fiserv"),
-    ("fisglobal", "FIS"),
-    ("jackhenry", "jackhenry"),
-    ("broadridge", "Broadridge"),
-    ("morningstar", "morningstar"),
-    ("autodesk", "Autodesk"),
-    ("paloaltonetworks", "paloaltonetworks"),
-    ("fortinet", "fortinet"),
-    ("sailpoint", "sailpoint"),
-    ("rapid7", "rapid7"),
-    ("dynatrace", "dynatrace"),
-    ("splunk", "splunk"),
-    ("procore", "procore"),
-    ("atlassian", "atlassian"),
-    ("instructure", "instructure"),
-    ("opentext", "opentext"),
-    ("pegasystems", "pega"),
-    ("informatica", "informatica"),
-    ("epic", "epic"),
-    ("ssc", "ssc"),
-    ("bentleysystems", "bentley"),
-    ("ptc", "ptc"),
-    ("verint", "verint"),
-    ("infor", "infor"),
-    ("epicor", "epicor"),
-    ("realpage", "realpage"),
-    ("yardi", "yardi"),
-    ("mrisoftware", "mrisoftware"),
-    ("tradeweb", "tradeweb"),
-    ("envestnet", "envestnet"),
-    ("wipro", "wipro"),
-    ("infosys", "infosys"),
-    ("hcltech", "hcltech"),
-    ("capgemini", "capgemini"),
-    ("ltimindtree", "ltimindtree"),
-    ("cognizant", "cognizant"),
-    ("quantiphi", "Careers_at_Quantiphi"),  # AI/data — moved from Greenhouse
-    ("guidewire", "external"),              # insurance platform — wd5
+    ("waystar", "waystar"),                  # healthcare rev-cycle — wd1, "Software Engineer II (C#)"
+    ("premera", "premera"),                  # health insurer WA — wd5, "SDE II – EDI Applications"
+    ("guidewire", "external"),               # insurance platform — wd5, 12 C#/.NET roles
+    ("quantiphi", "Careers_at_Quantiphi"),   # AI/data consulting — wd1, C#/.NET confirmed
 ]
 
 # Companies where the ATS slug could not be auto-confirmed.
@@ -193,14 +87,14 @@ UNCONFIRMED_SLUGS = {
 # Titles containing these words are skipped — they signal senior/management roles
 # not suitable for a new-grad candidate.
 SENIOR_TITLE_KEYWORDS = [
-    "senior", "staff", "principal", "manager", "director", "lead",
+    "staff", "principal", "manager", "director", "lead",
     "head of", "vp ", "vice president", "distinguished", "fellow",
     "architect", "cto", "ceo", "ciso",
 ]
 
 GEMINI_MODEL = "gemini-2.0-flash"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
-MIN_SCORE = 40          # jobs below this score are skipped in output
+MIN_SCORE = 51          # agent rubric: 0-50 = EXCLUDED, 51+ = keep
 MAX_JOBS = 200          # safety cap — process at most this many jobs
 REQUEST_DELAY = 0.5     # seconds between HTTP requests (be polite)
 REQUEST_TIMEOUT = 10    # seconds per HTTP request
@@ -230,7 +124,7 @@ def read_docx(path: str) -> str:
     return "\n".join(paragraphs)
 
 
-def summarize_profile(provider: str, client, raw_text: str) -> str:
+def summarize_profile(provider: str, client, raw_text: str, groq_fallback=None) -> str:
     """
     One-time call: ask Gemini to distill the raw .docx text into a clean,
     scoring-optimized summary. Strips meta-instructions, interview coaching
@@ -262,7 +156,7 @@ PROFILE DOCUMENT:
 {raw_text}"""
 
     try:
-        return call_llm(provider, client, prompt, max_tokens=2048)
+        return call_llm(provider, client, prompt, max_tokens=2048, groq_fallback=groq_fallback)
     except Exception as e:
         print(f"  [warn] Profile summarization failed: {e}. Using raw text.")
         return raw_text
@@ -284,7 +178,7 @@ def save_profile_doc(text: str) -> None:
         f.write(text)
 
 
-def update_profile_doc(provider: str, client, current_doc: str, new_fact: str) -> str:
+def update_profile_doc(provider: str, client, current_doc: str, new_fact: str, groq_fallback=None) -> str:
     """
     Merge a new fact (e.g. "I learned Kubernetes", "I completed an AWS cert")
     into the existing structured profile doc. Keeps everything else unchanged
@@ -309,7 +203,7 @@ NEW FACT TO ADD:
 
 Output the complete updated profile document:"""
 
-    return call_llm(provider, client, prompt, max_tokens=2048)
+    return call_llm(provider, client, prompt, max_tokens=2048, groq_fallback=groq_fallback)
 
 
 def fetch_text(url: str) -> str:
@@ -841,6 +735,35 @@ NON_SWE_TITLE_KEYWORDS = [
     "product manager", "program manager", "project manager", "hr ", "human resources",
 ]
 
+TARGET_COMPANIES = {
+    "microsoft", "truveta", "docusign", "geico", "milliman",
+    "premera blue cross", "avanade", "wizards of the coast", "tcs",
+    "infosys", "deloitte", "paccar", "charles schwab", "tesla",
+    "inovalon", "jpmorgan chase", "gainwell technologies", "ibm",
+    "honeywell", "covermymeds", "pointclickcare", "city national bank",
+    "waystar", "ge healthcare", "cognizant", "accenture", "capgemini",
+    "kpmg", "ey", "pwc", "hcltech",
+}
+
+DOTNET_KEYWORDS = ["c#", ".net", "asp.net", "dotnet", "dot net", "blazor", "entity framework", "linq", "wpf", "xaml", "azure functions", "nuget"]
+
+def is_dotnet_relevant(title: str, description: str) -> bool:
+    """Return True if job title or description mentions C#/.NET stack."""
+    combined = (title + " " + description).lower()
+    return any(kw in combined for kw in DOTNET_KEYWORDS)
+
+def is_stale(posted: str) -> bool:
+    """Return True if posted date is older than 30 days."""
+    if not posted:
+        return False
+    try:
+        dt = datetime.fromisoformat(posted.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - dt).days > 30
+    except Exception:
+        return False
+
 def is_entry_level_title(title: str) -> bool:
     """Return True if the title is an entry-level SWE role (not senior/management, not non-SWE)."""
     t = title.lower()
@@ -1014,62 +937,7 @@ Output format (always exactly this):
 CANDIDATE PROFILE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Name: Shweta Patel
-Location: Seattle, WA — open to relocate anywhere in the US
-Work Authorization: F-1 visa, OPT starting September 14 2026 (does NOT need employer
-sponsorship to start). STEM OPT extension eligible (24 months after initial OPT).
-Exclude only if posting explicitly says: "no visa", "US citizens only",
-"security clearance required", "must be authorized without sponsorship."
-OPT itself does not require sponsorship — do not penalize for lack of H1B sponsorship.
-
-Experience: 6+ years total
-- Techblocks Consulting (Oct 2021–Sep 2024): Senior-level C#/.NET Core microservices,
-  REST APIs, Azure cloud, SignalR, NUnit/xUnit, Azure DevOps CI/CD, Redis, CQRS,
-  Repository Pattern, Agile. 500–1000 concurrent users. 40% API performance improvement.
-- Meditab Software (Jul 2018–Oct 2021): ASP.NET MVC, .NET Core REST APIs, AWS IoT Core
-  (MQTT pub/sub), Amazon Lex chatbot + Lambda, SQL Server T-SQL optimization,
-  Firebase, SOLID principles, Windows Services, SOAP services.
-
-Education: M.S. Computer Information Science, Harrisburg University (graduating Aug 2026,
-STEM-designated, GPA 4.0). B.E. Computer Engineering (GPA 8.3/10).
-
-Core Technical Skills (VERIFIED, HANDS-ON):
-- Languages: C#, JavaScript, TypeScript, SQL. Python (personal projects — include when JD requires it).
-- Frameworks: .NET Core, ASP.NET Core, ASP.NET MVC, Entity Framework, LINQ, SignalR
-- Cloud Azure: App Service, Functions, Service Bus, Key Vault, Application Insights,
-  Azure SQL, Azure DevOps (APPLICATION-LAYER only — not infra/networking)
-- Cloud AWS: IoT Core, Lambda, Lex (real production usage)
-- Cloud GCP: Pub/Sub, Dataflow, BigQuery (personal project)
-- Databases: SQL Server, Azure SQL, Redis, BigQuery, Entity Framework
-- DevOps: Azure DevOps CI/CD, GitHub Actions, Docker, Git, YAML pipelines
-- Testing: NUnit, xUnit (90%+ coverage), Moq
-- Patterns: CQRS, Repository Pattern, Microservices, REST APIs, Event-driven Pub/Sub,
-  SOLID, Observer, Factory, Strategy
-- Other: Swagger, Postman, IIS, Windows Services, SOAP
-
-Personal Projects:
-1. Queue Backlog Intelligence System (QBIS): C#/.NET 8, Azure Functions, Azure Service Bus,
-   Azure Table Storage, React 18, Docker. Serverless monitoring system with 4 Azure Functions,
-   10 REST endpoints, sub-45-second alert latency. Real production-quality architecture.
-2. AI Job Search Automation Pipeline: Python 3.11, Google Gemini API, Groq API, Playwright,
-   BeautifulSoup4, Greenhouse REST API, argparse CLI. Scrapes 3700+ job postings daily,
-   LLM scoring, dual provider fallback. Live on GitHub, actively maintained.
-   This counts as real applied AI/ML and Python experience.
-3. COVID-19 Data Pipeline: Python, GCP Pub/Sub, Dataflow (Apache Beam), BigQuery.
-   Streaming pipeline, 5-10M records, reduced processing from 30-60min to under 5min.
-
-React.js: CONDITIONAL — only mention/count if the JD specifically requires React.
-Python: CONDITIONAL — only count as primary if JD specifically requires it.
-
-NOT skilled in (DO NOT credit these even if JD mentions them):
-- Terraform / Infrastructure as Code
-- Kubernetes / container orchestration
-- IAM / Entra ID platform engineering
-- Cloud networking (VPC/VNet, Private Link, DNS, firewalls)
-- GCP infra (Cloud KMS, VPC — only used Pub/Sub, Dataflow, BigQuery)
-- Embedded systems, firmware, FPGA, RTOS
-- Angular (no proficiency — skip if core requirement)
-- QA/test automation frameworks (Playwright for browser automation is NOT a test framework)
+{profile}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HARD DISQUALIFIERS — SCORE 0 IMMEDIATELY
@@ -1211,7 +1079,7 @@ OUTPUT — RETURN ONLY THIS JSON, NOTHING ELSE
 """
 
 
-def score_job(provider: str, client, profile: str, job: dict, description: str) -> dict:
+def score_job(provider: str, client, profile: str, job: dict, description: str, groq_fallback=None) -> dict:
     """
     Score job fit using the expert SYSTEM_PROMPT evaluator.
     Returns dict with score, reason, verdict, flag.
@@ -1223,7 +1091,8 @@ Location: {job['location']}
 Description: {description if description else '(no description available — score based on title only)'}"""
 
     try:
-        text = call_llm(provider, client, job_text, max_tokens=512, system_prompt=SYSTEM_PROMPT)
+        system_prompt = SYSTEM_PROMPT.replace("{profile}", profile)
+        text = call_llm(provider, client, job_text, max_tokens=512, system_prompt=system_prompt, groq_fallback=groq_fallback)
 
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
@@ -1246,55 +1115,72 @@ Description: {description if description else '(no description available — sco
 
 # ── LLM provider ──────────────────────────────────────────────────────────────
 
-def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024, system_prompt: str = None) -> str:
-    """Unified LLM call — works with either Gemini or Groq client."""
+def call_llm(provider: str, client, prompt: str, max_tokens: int = 1024, system_prompt: str = None, groq_fallback=None) -> str:
+    """Unified LLM call — works with either Gemini or Groq client.
+    If provider is gemini and quota is exhausted (429), automatically retries on groq_fallback."""
     if provider == "gemini":
-        from google.genai import types
-        config = types.GenerateContentConfig(system_instruction=system_prompt) if system_prompt else None
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt, config=config)
-        return response.text.strip()
-    else:
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        for attempt in range(3):
-            try:
-                response = client.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                )
-                return response.choices[0].message.content.strip()
-            except Exception as e:
-                err = str(e).lower()
-                if "429" in err or "rate_limit" in err or "rate limit" in err:
-                    wait = 60 * (attempt + 1)
-                    print(f"  [rate limit] Groq quota hit — waiting {wait}s before retry {attempt + 1}/3...")
-                    time.sleep(wait)
-                else:
-                    raise
-        raise RuntimeError("Groq rate limit: failed after 3 retries")
+        try:
+            from google.genai import types
+            config = types.GenerateContentConfig(system_instruction=system_prompt) if system_prompt else None
+            response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt, config=config)
+            return response.text.strip()
+        except Exception as e:
+            err = str(e)
+            if ("429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower()) and groq_fallback:
+                print("  [quota] Gemini credits exhausted — falling back to Groq...")
+                client = groq_fallback
+            else:
+                raise
+    # Groq path (primary or fallback)
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    for attempt in range(3):
+        try:
+            response = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=messages,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            err = str(e).lower()
+            if "429" in err or "rate_limit" in err or "rate limit" in err:
+                wait = 30 * (attempt + 1)
+                print(f"  [rate limit] Groq quota hit — waiting {wait}s before retry {attempt + 1}/3...")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError("Groq rate limit: failed after 3 retries")
 
 
 def get_llm_client() -> tuple:
     """
     Auto-detect which LLM provider to use.
-    Checks GEMINI_API_KEY first (primary), falls back to GROQ_API_KEY.
-    Returns (provider_name, client_object).
+    Returns (provider_name, primary_client, groq_client_or_None).
+    Always initializes Groq alongside Gemini so quota-exhausted fallback works per-call.
     """
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     groq_key = os.environ.get("GROQ_API_KEY", "")
+    gemini_client = None
+    groq_client = None
 
     if gemini_key:
         from google import genai
-        print("Using Google Gemini API")
-        return ("gemini", genai.Client(api_key=gemini_key))
-
+        gemini_client = genai.Client(api_key=gemini_key)
     if groq_key:
         from groq import Groq
-        print("Using Groq API (local fallback)")
-        return ("groq", Groq(api_key=groq_key))
+        groq_client = Groq(api_key=groq_key)
+
+    if gemini_client:
+        label = "Using Google Gemini API" + (" + Groq fallback" if groq_client else "")
+        print(label)
+        return ("gemini", gemini_client, groq_client)
+
+    if groq_client:
+        print("Using Groq API")
+        return ("groq", groq_client, None)
 
     print("Error: No API key found. Set one of:")
     print("  Primary:  export GEMINI_API_KEY='your-key'  # https://aistudio.google.com/app/apikey")
@@ -1334,9 +1220,9 @@ def main():
             sys.exit(1)
         print(f"  Profile loaded ({len(raw_profile)} chars)")
 
-        provider, client = get_llm_client()
+        provider, client, groq_client = get_llm_client()
         print("\nSummarizing profile...")
-        profile_text = summarize_profile(provider, client, raw_profile)
+        profile_text = summarize_profile(provider, client, raw_profile, groq_client)
         save_profile_doc(profile_text)
 
         print("\n" + "─" * 60)
@@ -1347,10 +1233,10 @@ def main():
         return
 
     if args.update:
-        provider, client = get_llm_client()
+        provider, client, groq_client = get_llm_client()
         current_doc = load_profile_doc()
         print("Updating profile doc with new fact...")
-        updated_doc = update_profile_doc(provider, client, current_doc, args.update)
+        updated_doc = update_profile_doc(provider, client, current_doc, args.update, groq_client)
         save_profile_doc(updated_doc)
 
         print("\n" + "─" * 60)
@@ -1367,7 +1253,7 @@ def main():
         print()
 
     profile_text = load_profile_doc()
-    provider, client = get_llm_client()
+    provider, client, groq_client = get_llm_client()
 
     # ── Fetch jobs from all sources ──
     all_jobs = []
@@ -1414,6 +1300,16 @@ def main():
         unique_jobs = [j for j in unique_jobs if is_posted_today(j.get("posted", ""))]
         print(f"  Filtered to jobs posted in the last 24 hours: {len(unique_jobs)} (of {before})")
 
+    # Pre-sort: jobs with C#/.NET in the title or pre-loaded description first.
+    # Ensures the MAX_JOBS cap never silently discards all relevant jobs.
+    def dotnet_priority(job):
+        combined = (job.get("role", "") + " " + job.get("description", "")).lower()
+        return 0 if any(kw in combined for kw in DOTNET_KEYWORDS) else 1
+
+    unique_jobs.sort(key=dotnet_priority)
+    dotnet_count = sum(1 for j in unique_jobs if dotnet_priority(j) == 0)
+    print(f"  Jobs with C#/.NET signal (title or description): {dotnet_count}")
+
     print(f"\nTotal unique jobs to process: {len(unique_jobs)}")
     if len(unique_jobs) > MAX_JOBS:
         print(f"Capping at {MAX_JOBS} jobs. Edit MAX_JOBS in the script to change this.")
@@ -1433,8 +1329,30 @@ def main():
             description = extract_job_description(job["url"])
             time.sleep(REQUEST_DELAY)
 
+        # Stale check (>30 days old)
+        if is_stale(job.get("posted", "")):
+            print(f"  Skipping — stale posting (>30 days)")
+            job["score"] = 0
+            job["verdict"] = "EXCLUDED"
+            job["flag"] = "stale_posting"
+            job["reason"] = "Posting is older than 30 days"
+            continue
+
+        # C#/.NET stack pre-filter — skip LLM if description available but has no .NET signal
+        if description and not is_dotnet_relevant(job["role"], description):
+            print(f"  Skipping — no C#/.NET stack in description")
+            job["score"] = 0
+            job["verdict"] = "EXCLUDED"
+            job["flag"] = "wrong_stack"
+            job["reason"] = "No C#/.NET stack found in job description"
+            continue
+
+        # Flag target companies
+        job["target"] = "🎯" if job.get("company", "").lower() in TARGET_COMPANIES else ""
+
         print(f"  Scoring...")
-        scored = score_job(provider, client, profile_text, job, description)
+        scored = score_job(provider, client, profile_text, job, description, groq_fallback=groq_client)
+        time.sleep(2)  # stay under Groq free-tier 30 req/min limit
         job["score"] = scored["score"]
         job["reason"] = scored["reason"]
         job["verdict"] = scored.get("verdict", "")
@@ -1442,6 +1360,8 @@ def main():
         print(f"  Score: {job['score']}/100 [{job['verdict']}] — {job['reason']}")
         if job["flag"]:
             print(f"  Flag: {job['flag']}")
+        if job.get("target"):
+            print(f"  {job['target']} Target company!")
 
         if job["score"] >= MIN_SCORE and job["verdict"] != "EXCLUDED":
             results.append(job)
@@ -1468,7 +1388,7 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = f"jobs_{timestamp}.csv"
 
-    fieldnames = ["score", "verdict", "flag", "company", "role", "location", "posted", "reason", "source", "url"]
+    fieldnames = ["score", "verdict", "flag", "target", "company", "role", "location", "posted", "reason", "source", "url"]
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
